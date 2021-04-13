@@ -14,12 +14,11 @@ def wb_grayworld(img):
     return img_wb
 
 
-def crop_mouse_callback(event, x, y, para)
+def crop_mouse_callback(event, x, y, para):
     return None
 
 
 def wb_brightestpixel(img):
-    img = cv2.imread('resources/TooMuchBlue.JPG')
     b, g, r = cv2.split(img)
 
     img_b2 = cv2.addWeighted(b, 255 / b.max(), 0, 0, 0)
@@ -52,7 +51,7 @@ if __name__ == '__main__':
     for x in images_path:
         image = cv2.imread(x)
         image = cv2.resize(image, dim)
-        image_wb = wb_grayworld(image)
+        image_wb = wb_brightestpixel(image)
         images.append(image)
         images_wb.append(image_wb)
         cv2.namedWindow('original')
