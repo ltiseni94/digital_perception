@@ -50,11 +50,13 @@ if __name__ == '__main__':
     for x in images_path:
         image = cv2.imread(x)
         image = cv2.resize(image, dim)
+
         image_wb_grayworld = wb_grayworld(image)
         image_wb_whitemax = wb_whitemax(image)
 
         images.append(image)
         images_wb_grayworld.append(image_wb_grayworld)
+        images_wb_whitemax.append(image_wb_whitemax)
         cv2.namedWindow('original')
         cv2.moveWindow('original', 0, 0)
         cv2.imshow('original', image)
