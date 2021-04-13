@@ -19,7 +19,15 @@ def crop_mouse_callback(event, x, y, para)
 
 
 def wb_brightestpixel(img):
-    return None
+    img = cv2.imread('resources/TooMuchBlue.JPG')
+    b, g, r = cv2.split(img)
+
+    img_b2 = cv2.addWeighted(b, 255 / b.max(), 0, 0, 0)
+    img_g2 = cv2.addWeighted(g, 255 / g.max(), 0, 0, 0)
+    img_r2 = cv2.addWeighted(r, 255 / r.max(), 0, 0, 0)
+
+    img2 = cv2.merge((img_b2, img_g2, img_r2))
+    return img2
 
 
 def wb_stretch(img):
