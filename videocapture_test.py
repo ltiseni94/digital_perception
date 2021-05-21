@@ -24,5 +24,5 @@ while True:
         cv2.imshow('webcam', frame_final)
 
     key = cv2.waitKey(1) & 0xff
-    if key is ord('q'):
+    if key == ord('q'):
         break
