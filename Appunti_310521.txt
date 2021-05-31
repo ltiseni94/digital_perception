@@ -1,0 +1,98 @@
+Flusso video:
+    Mappa di coordinate x,y,t. Varie immagini nel tempo.
+    Supponiamo di avere una scena fissa e vogliamo determinare come i pixel si spostano tra un'immagine e la successiva.
+
+2 Classi di algoritmi:
+    - Densi: si applica un operatore a tutti i pixel di un'immagine (e la precedente) per trovare una velocità.
+    - Sparsi: il flow si applica solo a un sottoinsieme dell'immagine (una o più aree specifiche, esempio features).
+
+
+Gli algoritmi di tracking sono più veloci di quelli di detection. (1 ordine di grandezza, anche se denso, in genere).
+
+
+Lucas-Kanade (1981)
+
+    Primo algoritmo di tracking.
+    Ipotesi:
+        - Un pixel che si sposta nell'immagine mantiene la sua luminosità costante.
+        - I movimenti sono piccoli (Esiste una continuità temporale)
+        - C'è coerenza spaziale: se vedo un oggetto che mi si sposta davanti devo vedere la stessa cosa
+          (gli oggetti complessi possono dare fastidio da questo punto di vista). Sto cercando
+          lo stesso pattern di pixel.
+
+          I(x, y, t-1) = I(x+u(x,y), y+v(x,y), t)       I= intensità. u= vettore velocità x, v= vettore velocità y
+
+          Tuttavia questa formula prevede che non ci sia una variazione di intensità luminosa nel tempo,
+          cosa non sempre vera.
+
+          Linearizing to first order:
+          dI / dt = dI/dx u + dI/dy v
+
+          dI / dy = Ixy [u, v]  --> Si pensi a Ixy come il jacobiano di I.
+
+          Come si calcola alla fine: Sfruttando la coerenza spaziale, si dice che nell'intorno di un punto tutti i
+          i punti devono per forza avere lo stesso campo di spostamento. Quindi si prende quell'intorno e si va ad
+          utilizzare un subset di punti per calcolare i gradienti spaziali e temporali.
+
+          Se i gradienti spaziali sono piccoli (succede quando il contrasto cromatico è molto basso, esempio una
+          superficie monocolore), non si riesce veramente a risolvere il sistema, il problema è malcondizionato.
+
+          https://en.wikipedia.org/wiki/Lucas%E2%80%93Kanade_method
+
+          Limitazioni: Long-edge points (la direzione viene confusa)
+
+          A^t A: matrice che condiziona il problema:
+
+          - autovalori piccoli: regione flat (lavagna bianca)
+
+          - Un autovalore prevale sull'altro: sto guardando un edge, ovvero una superficie in cui la variazione
+            cromatica varia principalmente in una direzione.
+
+          - I due autovalori sono grandi: un buon elemento per l'optical flow. (questa condizione è alla base della
+            features detection dei vertici in un'immagine)
+
+
+        Si potrebbe migliorare l'accuratezza utilizzando l'errore tra immagine prevista e immagine reale al tempo t.
+        Quindi si potrebbe andare a eliminare effetti del secondo ordine.
+
+
+        Altro modo di migliorare Lucas-Kanade: piramidi.
+
+        Quando si parla di Optical Flow la piramide aiuta perché fare un'optical flow sull'immagine ridotta aiuta a
+        tenere traccia degli spostamenti più ampi.
+
+        Inoltre posso usare l'immagine piccola per avere una guess iniziale per l'immagine di dimensione doppia: in
+        questo modo si riesce a migliorare la precisione mano a mano che aumenta la dimensione dell'immagine.
+
+        (CalcOptFlowpyrlK o qualcosa del genere è il comando di opencv).
+
+
+        Problemi: se ci sono dei dettagli molto piccoli (esempio una palma con tanti dettagli sul tronco) ho dei
+        problemi, la velocità è un casino. Però se uso un pyramid e un gaussian filter, se parto da un'immagine piccola
+        riesco ad avere una buona stima e poi riesco a raffinare anche per le immagini a più alta risoluzione,
+        nonostante i dettagli.
+
+
+Approcci del secondo ordine
+
+    Si introduce una funzione energetica che deve essere minimizzata.
+
+    Farneback Dense Flow
+    cv2.calcOpticalFlowFarneback: è più smooth ma è lento. No real-time.
+
+    TV-L1 Optical Flow (total variation norm L1) -> Anche questo è lentissimo.
+
+    Per ogni immagine un metodo denso produce due immagini monocromatiche in cui l'intensità è proporzionale alla
+    velocità (due assi di movimento <--> due immagini)
+
+    Horn Shunk
+    Altro metodo denso.
+
+
+    MeanShift (prende in ingresso una distribuzione, un istogramma diciamo)
+
+    Calcola il baricentro della distribuzione e poi dopo un passo ricalcola lo spostamento più plausibile
+    rispetto alla distribuzione di partenza.
+
+    Si applica bene all'inseguimento di oggetti: usando la distribuzione di probabilità è molto più robusto rispetto
+    al gradiente cromatico o all'intensità dei punti.

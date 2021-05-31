@@ -1,0 +1,180 @@
+Bitmap --> immagini con soli 1 e 0 che fanno da maschere per le immagini
+
+Esempi di utilizzo delle maschere:
+- Voglio vedere il colore di una regione non quadrata dello spazio.
+- Voglio fare uno slicing non banale dell'immagine, basato su un qualche criterio di inclusione dei pixel (segmentazione di un oggetto, analisi di una porzione di immagine)
+
+Creazione maschere:
+- cv2.Threshold
+- cv2.adaptiveThreshold
+
+
+
+Che tipi di soglia si possono fare? Ricordiamo che uint8 vanno da 0 a 255 e float a 0 a 1.
+
+Soglia binaria: >= o <= (usando Binary Inverted). Se True metto il bit (pixel della maschera) a 1 e se False a 0, o viceversa
+Praticamente la maschera è un'immagine con soli pixel bianchi o neri in questo caso.
+
+Ci sono altri metodi di soglia, ad esempio che tagliano tutto ciò che oltre un certo valore.
+- Saturazione verso l'alto o verso il basso. Se il valore è sopra (sotto) soglia, il pixel di maschera avrà valore 1 (0), mentre gli altri rimangono invariati
+
+
+
+Metodo OTSU:
+
+Cosa succede quando c'è un'ombra su una porzione di una superficie estesa? La parte in ombra ha un'illuminazione minore, un'intensità luminosa minore.
+Vedi optical illusion chessboard: una casella bianca in ombra ha lo stesso tono di grigio di una casella nera illuminata.
+Il nostro cervello compensa e non sembrano uguali i grigi, però a livello di immagine c'è lo stesso tono di grigio e quindi è difficile riconoscere bianco e nero con una
+singola soglia su tutta l'immagine.
+
+OTSU è un metodo di soglia adattiva. Il valore della soglia viene determinato dal livello medio di intensità di un'area ristretta intorno al pixel (si imposta questo come parametro poi)
+
+Si usa per le scacchiere, nella calibrazione.
+
+
+
+Tuttavia può rimanere del rumore, dei pixel sparsi in giro.
+
+Si può "filtrare". Ci sono due metodi:
+
+- erode: rende più sottili le parti bianche della maschera (toglie un pixel sul bordo)
+- dilate: rende più spesse le parti bianche della maschera (aggiunge un pixel sul bordo)
+
+Cosa succede se faccio erode e dilate in sequenza? I pixel di rumori scompaiono e poi non vengono reinspessiti, perché non esistono più.
+
+Posso fare n erode e poi n dilate, come metodo di filtraggio.
+
+cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)   cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+
+OPEN fa prima erode e poi dilate. CLOSE fa prima dilate e poi erode
+OPEN toglie rumori sul nero. CLOSE toglie rumori sul bianco.
+
+
+
+Gradiente morfologico:
+Operazione di sottrazione tra immagine dilated e immagine eroded:
+cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel)
+
+Praticamente mi rimane solo il bordo degli elementi della maschera, facendo così. E' un altro modo di trovare i bordi.
+
+
+Cos'è il kernel: matrice di 1 e 0 che dice su che direzione dominante aggiungo dei pixel.
+
+Posso decidere delle direzioni dominanti su cui aggiungere e togliere i pixel con le operazioni di erode e dilate.
+(Da provare. Il kernel che si comporta in maniera uguale in tutte le direzioni è quello rettangolare, tutti a 1).
+
+vedi cv2.getStructuringElement
+
+
+
+Un'altra operazione tipica che si può applicare è la Distance Transform.
+
+Supponiamo di avere una maschera con n oggetti.
+
+Praticamente mi trasforma gli oggetti in una heatmap, in cui ad ogni pixel si sostituisce la distanza dal bordo.
+La distanza può essere calcolata in vari modi.
+Esempio: pixel sul bordo = 1.
+Contour di pixel adiacenti al bordo = 2
+Contour di pixel adiacenti al Contour=2 = 3
+e così via.
+
+
+Esempio: come si conta un'immagine piena di monete su sfondo bianco?
+Supponiamo di essere riusciti a separarle dallo sfondo e aver ottenuto una maschera bianca e nera.
+Supponiamo anche di averle sogliate con una soglia adattiva: non avremo N cerchi bianchi, perché alcuni si andranno a sovrapporre.
+Non è detto che sia sufficiente usare un erode N volte.
+
+SUpponiamo di poter utilizzare la distance transform. Applicando la distance transform i centri delle monete diventano più luminosi rispetto ai loro bordi e alle sovrapposizioni tra le monete.
+A questo punto si applica di nuovo un threshold dopo la distance trasnform. Ecco che così ho isolato le monete.
+
+A questo punto bisogna contarle. Nell'esempio usa cv2.connectedComponents(img) che ci dice quanti componenti non connessi ci sono.
+
+
+
+FILTRI NON LINEARI SULLE IMMAGINI:
+
+FloodFill:
+
+Gli si dà un punto nell'immagine, un range di valori di colore (o di intensità), e a partire da quel punto ritorna tutti i punti che rispettano quella condizione che sono connessi con il punto di partenza.
+
+cv2.floodFill
+
+
+
+Inpaint:
+
+cv2.inpaint --> algoritmo che ripara immagini danneggiate o difettose. Cerca di riempire con quello che ci sarebbe dovuto essere.
+
+Gli si dà un'area ritenuta rovinata e la riempie con i colori dei pixel vicini. Ci sono anche metodi più sofisticati che usano un'analisi dei pattern dell'area
+
+
+Watershed: riduce la quantità di colori nell'immagine.
+
+
+
+Riduzione rumore, altri filtri:
+
+Immagini notturne: quando diventa basso il numero di fotoni (in notturna) il rumore elettronico entra in gioco perché la camera ha meccanismi compensatori (aumento guadagno operazionali).
+
+
+
+Edge detection:
+
+Posso trovare i bordi verticali facendo derivate in direzione orizzontale. Ma come si fa se c'è un rumore gaussiano in sottofondo? La derivata viene uno schifo.
+
+Ma se prima di derivare faccio la convoluzione con un filtro gaussiano.
+
+
+
+
+Median Blur:
+è simile ai filtri di convoluzione lineari, ma si usa la mediana nel kernel, che permette di ignorare le variazioni più estreme dei colori.
+In sostanza, usare la media spalma il rumore su tutti i pixel. Invece se uso la mediana tendo ad ignorare informazioni non conformi a quelle dell'area circostante.
+QUindi se faccio una mediana su un kernel abbastanza grande (dimensione maggiore del disturbo tipico che voglio togliere) elimino il disturbo.
+
+
+
+BilateralFilter
+
+Praticamente dove trova gradienti forti (grandi rispetto alla deviazione dell'area circostante) non fa lo smoothing, invece dove le deviazioni sono presumibilmente dei rumori fa uno smoothing.
+Si ottengono della situazioni più pulite, ma i tempi di calcolo sono più elevati (è tutto non lineare).
+
+
+pyrMeanShiftFiltering:
+
+Comprime la differenza cromatica tra valori cromaticamente vicini (rende colori più uniformi)
+
+Ha bisogno sia di raggi geometrici che di raggi cromatici.
+
+Il raggio geometrico gli indica su quale area fare l'elaborazione (l'intorno del pixel)
+Il raggio cromatico invece serve per definire una distanza entro cui si va ad appiattire il colore sulla media.
+
+
+
+
+EdgePreservingFilter:
+
+Filtro complesso che fa diverse cose insieme, ispirato a pyrMeanShift. Stavolta gli si passa una flag su come operare, una varianza geometrica e una varianza cromatica
+
+
+
+
+NonLinearMeansDenoising
+http://www.ipol.im/pub/art/2011/bcm_nlm/article.pdf
+
+
+Ci sono anche le versioni Multi del filtro che si guardano anche i frame precedenti (esempio nel caso sia un video).
+
+
+Tecniche adattive per sottrarre il background
+
+KNN background subtractor. Learning rate, più è basso più l'immagine è persistente, l'aggiornamento del background è più lento.
+
+Quando si usano degli algoritmi più specializzati normalmente openCV espone un'interfaccia standard con approccio factory e utilizzo del componente.
+
+Sarà abbastanza comune istanziare degli oggetti base che hanno gli stessi metodi (apply, learning rate, etc etc)
+
+Altri sottrattori: MOG2, HLS, GSOC, LSBP
+
+
+Il problema di tutti 

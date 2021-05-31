@@ -1,0 +1,116 @@
+APPUNTI 12/05/2021
+
+Filtri sulle immagini:
+
+Alcuni dei filtri più usati sono quelli di convoluzione. Noi avremo dei segnali non nel tempo, ma nello spazio, e in particolare in 2 dimensioni.
+
+f --> image
+g --> kernel (solitamente più piccolo dell'immagine, è una matrice 3x3 o 5x5)
+
+Fare una convoluzione bidimensionale con un kernel: significa prendere l'immagine di questo kernel (che ha dentro il rect, il gradino, il triangolino)
+
+cv2.filter2d(src, ddepth, kernel[, dst[, anchor[, delta[, borderType]]]]) --> dst
+
+ddepth = tipo di dato che voglio in uscita (CV_8U, CV_16U, CV_32F, CV_64F)
+
+Tipi di kernel:
+Identity    BOX/Blur    Shift h     HBlur       Sharp (esalta differenze)       Edge (sembra essere la derivata)
+0 0 0       1 1 1       0 0 0       0 0 0       -1 -1 -1                        -1 0 1
+0 1 0       1 1 1       0 0 1       1 1 1       -1  9 -1                        -2 0 2
+0 0 0       1 1 1       0 0 0       0 0 0       -1 -1 -1                        -1 0 1
+
+Il Blur è una specie di media. In realtà dà lo stesso effetto di una sfocatura (è lo stesso che succede sul sensore quando si mette il fuoco della lente un po' spostato).
+Grosso modo, lo Sharp è l'operazione inversa del blur.
+
+Edge ---> Edge detector, è in grado di esaltare i bordi.
+
+Oltre a scriverli a mano, ci sono già delle primitive per costruire i kernel.
+
+cv2.getDerivKernels
+cv2.getGaussianKernel
+cv2.getGaborKernel  ---> Gabor Kernel combina il derivativo con il gaussiano, nel senso che fa fare una derivata però con una gaussiana.
+
+Posso combinare i kernel nell'ordine che voglio, sono operazioni lineari.
+
+
+Operazioni MAC: multiply and accumulate. Anche sui processori si possono eseguire delle operazioni matematiche in parallelo, perché vengono
+convertite in un codice macchina che le svolge tutte in una volta.
+
+Separabilità dei filtri gaussiani: Nella guassiana non ci sono i termini misti nell'esponenziale, perciò si può separare la funzione
+In sostanza da un'operazione n x m si passa a un'operazione n + m.
+
+
+DOMANDA!!! MA QUESTA ROBA SI FA CON CPU, GPU?
+
+
+Come si gestisce il bordo: Al bordo mancano dei pixel ai kernel, come si opera?
+
+1) Suppongo che fuori non ci sia nulla.
+2) Suppongo che ci sia continuità con l'altro lato.
+3) Suppongo che lungo il bordo si mantenga il valore costante del pixel sul bordo.
+4) Per simmetria, quando arrivo al bordo, l'immagine si ripete specularmente rispetto al bordo.
+
+Questi metodi si possono passare come macro alla cv2.filter2d
+
+
+Come si fa la derivata???
+cv2.Sobel -- > costruisce un kernel per fare la derivata nella direzione data in input
+Me ne devo costruire due e farli entrambi (uno orizzontale e uno verticale)
+
+Poi dovrei prendere il valore assoluto, se voglio i bordi.
+
+
+Alcuni FILTRI UTILI PER I BORDI
+
+Il filtro di Scharr fa insieme quelle operazioni (2 sobel + uso valore assoluto)
+Il filtro di Canny: questo è utile per evitare il problema del rumore, perché fa anche uno smooth prima utilizzando un kernel blur e poi fa uno scharr
+                    Infine uccide i gradini che sono sotto una certa soglia.
+                    Con tutte queste operazioni spero di avere ottenuto SOLO I BORDI!
+                    
+Abbiamo provato lo Scharr a mano, abbiamo provato Canny. FIGO!
+
+
+ALTRI USI DEL FILTRO GAUSSIANO:
+Come faccio a comprimere un'immagine? Prendo pixel pari o pixel dispari? In realtà prima di fare un sottocampionamento, è meglio fare un blur
+gaussiano. Si mantengono meglio le features e le caratteristiche nell'immagine.
+
+
+Dove altro si usano i filtri convolutivi?
+
+Nelle convolutional neural network.
+
+In generale prima si potevano usare delle feature artefatte o dei kernel descrittivi e fare le convoluzioni con le immagini, dove il valore era più alto diceva che c'era la feature.
+
+Con la rete neurale convolutiva accetto di non decidere il kernel, di allenare la rete neurale in maniera che il kernel venga modificato. Il gradino principe della rete neurale è comunque una convoluzione.
+In generale i vari gradini sono delle convoluzioni.
+
+
+Filtro di Frequenza:
+
+In opencv ci sono le macro per fare le fft delle immagini.
+Qui la fft dobbiamo immaginarla spaziale. La parte costante finisce nel centro, mentre le varie componenti frequenziali si dispongono a distanza x e distanza y pari alla frequenza della sinusoide.
+
+Se ho un'immagine con strisce bianche e nere sinusoidali in orizzontale, ottengo una fft con 3 puntini: la parte costante nel centro e un puntino a destra e uno a sinistra (uno positivo e uno negativo) che sono in corrispondenza della frequenza della sinusoide.
+
+Le fft sono lineari. Se sommo due pattern, posso sommare le loro due fft e ottengo la fft dell'immagine somma.
+
+Una gaussiana va in una gaussiana nella fft. è l'1 della gaussiana.
+
+DA RIVEDERE BENE CHE CACCHIO FA LA FFT. DOMANDA: COSA VUOL DIRE AVERE UNA LINEA IN UNA IMMAGINE FFT
+
+
+La cosa interessante è che l'immagine è la somma di varie immagini che rappresentano le componenti frequenziali.
+
+Se ho un disturbo visivo in una direzione posso uccidere qualche direzione nella fft.
+
+Oppure posso escludere tutto tranne un cerchio centrale: faccio una compressione.
+Oppure posso escludere un cerchio centrale: allora esalto solo le derivate.
+Oppure posso eliminare dei singoli pixel, ovvero delle componenti frequenziali.
+
+Discrete cosine transform: se sappiamo che i valori sono reali si fa prima.
+
+
+
+GABOR FIILTER:
+
+è un filtro lineare con un kernel modulato con una serie di coseni.

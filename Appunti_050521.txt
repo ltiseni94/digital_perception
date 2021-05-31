@@ -1,0 +1,137 @@
+APPUNTI 05/05/2021
+
+Trasformazioni geometriche:
+
+Quali sono le trasf. lineari che posso fare sulle immagini?
+
+Di nuovo bisogna pensare alle coordinate omogenee (c'è un fattore di scala libero sui vettori)
+
+1) traslazione      RIGIDA  [sommo vettore fisso a tutti i punti]       2 DOF               [I | t]
+2) rotazione        RIGIDA  [uso matrice di rotazione 2x2]              1 DOF (angolo)      [R | I]
+3) similitudine     fattore di scala su matrice di rotazione su x e y   4 DOF               [sR| t]
+
+In queste, rispetto alle precedenti, angoli di un certo
+4) affinità             Mantengo parallelismo                           6 DOF               [A] 2x3
+5) proiezione           perdo anche parallelismo, linee dritte ok       8 DOF               [B] 3x3
+
+Non ha senso fare una trasformazione a 9 gradi di libertà per vettori omogenei, per il fatto che vettori 3D scalati sono la stessa roba
+
+
+Affinità
+
+
+[x', y']T  =   [a   b   c] [x, y, 1]T    Nuova origine più due vettori arbitrari dove mappo anche i versori x e y.
+                d   e   f
+                
+                
+In un'affinità i rapporti tra linee, aree, rimangono preservati.
+
+
+Costituisce un gruppo: un'affinità composta un'affinità è ancora un'affinità.
+
+
+Projection:
+
+[x', y', w']T = [a   b   c] [x, y, w]T
+                 d   e   f
+                 g   h   i
+                 
+8 DOF, gruppo, le scale non vengono mantenute e nemmeno il parallelismo.
+
+
+Pensiamo alle immagini in prospettiva: tutte le linee parallele (nel mondo reale) convergono in un punto.
+Tranne quelle verticali. Quando le linee sono parallele al piano immagine (proprio al piano, non al versore) allora il punto è all'infinito.
+
+
+La composizione di proiezioni è a sua volta una proiezione. Sono sufficienti 4 punti per stabilire gli 8 parametri indipendenti della matrice di proiezione.
+In stereografia si utilizza questo aspetto per comporre il 3D partendo da due immagini.
+
+Inoltre questa tecnica viene utilizzata per rimuovere la distorsione dovuta alla prospettiva! Infatti se io conosco le coordinate reali di 4 punti nell'immagine
+posso calcolare la proiezione inversa.
+
+
+Bird Eye Homography:
+Voglio vedere il pavimento da una foto che guarda una porta.
+Se conosco alcuni punti posso effettuare una trasformazione che mi permette di offrire una vista fittizia dall'alto.
+
+Se conosco i vanishing point delle direzioni posso utilizzarli per ricostruire la prospettiva. in determinate occasioni i punti non sono
+discriminabili ma i vanishing point sì.
+Se io sono su un binario dritto non ho riferimenti sul binario, ma posso vedere dov'è il vanishing point.
+
+
+
+Mosaicing:
+
+Uso più foto per comporre una singola immagine. Per fare questo scelgo una immagine di riferimento e mi servono almeno 4 punti in comune tra ciascuna coppia di immagini.
+Prima aggiusto le prospettive per averne una unica, poi devo traslare le immagini per sovrapporre le immagini in maniera coerente.
+
+
+
+Suggerimenti per l'utilizzo di undistort e trasformazioni varie:
+Applicare solo alle features di interesse preferibilmente per abbattere i tempi di calcolo.
+
+
+
+BitMap ---- Maschere  (Argomento generico: Segmentazione immagini)
+
+
+
+--> metodi grezzi       dentro core
+--> metodi statistici   dentro core / contrib
+--> metodi AI           dentro contrib
+
+
+Algoritmi di segmentazione immagini:
+
+
+1) grabcut
+
+Extract foreground from background with minimal user input.
+Qui bisogna fare una buona maschera di partenza per dire quale parte dell'immagine è foreground e quale background.
+
+
+2) pyrMeanShift
+
+Cerca di lavorare riducendo le differenze di colore. In particolare cerca di avvicinare le cose di colore simile tutto sullo stesso colore.
+Utile perché ci fa fare meglio la segmentazione sui colori. Marca meglio le cose.
+Esalta le differenze tra i colori.
+Quando vogliamo vedere i gradienti di immagine questo algoritmo anche aiuta, perché crea dei bordi più netti.
+
+
+3) count object and find countours (cv2.findContours)
+
+lavora su un'immagine singolo canale (1 colore o livello di grigi). Ritorna un "albero" di contorni dell'immagine (un oggetto potrebbe essere dentro un altro oggetto!)
+Con l'argomento MODE si possono gestire dei filtri di albero, per farsi tornare tutto con gerarchia, tutto senza gerarchia, solo gli oggetti padre.
+
+Come ritorna il contorno? O si prendono tutti i punti a prescindere, oppure si "comprime" il contorno e ci si fa ritornare solo gli estremi dei segmenti.
+Ci sono dei metodi di approssimazione per evitare problemi di rumore nel contorno.
+
+
+Gerarchia: C'è un elenco livello per livello. 
+
+
+4) watershed
+NON FATTO
+Gli passi immagini e lui le segmenta in aree coerenti. Lavora sui contrasti di colore. Se la variazione di colore è brusca vengono create
+due aree differenti. Però bisogna passargli prima un vettore di markers.
+
+
+
+OpenCV --> Moments
+
+Ci sono già una serie di tools per trovare info interessanti come area, perimetro, centro di massa, inerzia e anche ordini superiori.
+
+cv2.moments(img)
+
+Momenti di HU: sono delle combinazioni dei momenti che sono utili per fare paragoni sulle forme.
+Sono invarianti rispetto a scale, rotazione e riflessione eccetto per l'ultimo (7°) che cambia segno con la riflessione.
+
+cv2.HuMoments(moments)
+
+Con questi momenti posso confrontare delle immagini in cui devo solo riconoscere un oggetto buttato su un piano, con 4-5 classi di oggetti.
+Sono degli indici che rimappano le caratteristiche degli oggetti in pochi indicatori.
+
+cv2.matchShapes --> questa usa gli HuMoments per fare dei comparisons.
+
+
+
