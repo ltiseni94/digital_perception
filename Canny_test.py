@@ -22,7 +22,6 @@ while True:
     max_xy = np.max(sob_xy)
     # ddepth, nel caso di immagini a 8 bit, tronca le derivate negative)
 
-
     # Canny frame, se uno fa prima il blur gaussiano becca solo i contorni più rilevanti.
     canny_frame = cv2.Canny(frame_blur, 40, 120, (9, 9))
 
@@ -31,5 +30,3 @@ while True:
     k = cv2.waitKey(1) & 0xff
     if k == ord('q'):
         break
-
-

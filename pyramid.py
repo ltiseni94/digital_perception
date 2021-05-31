@@ -2,6 +2,10 @@ import cv2
 import numpy as np
 
 camera = cv2.VideoCapture(0)
+# camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0)
+# camera.set(cv2.CAP_PROP_EXPOSURE, 200)  # Per camere usb standard sono in decimi di ms
+
+# Controllare cosa ritornano e vedere se lo può fare.
 
 while True:
     ret, frame = camera.read()
