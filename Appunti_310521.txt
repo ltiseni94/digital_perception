@@ -96,3 +96,18 @@ Approcci del secondo ordine
 
     Si applica bene all'inseguimento di oggetti: usando la distribuzione di probabilità è molto più robusto rispetto
     al gradiente cromatico o all'intensità dei punti.
+
+    CamShift è la versione ottimizzata di MeanShift
+
+
+    In realtà ora ci sono un sacco di trackers:
+
+    - Boosting:
+    - Mil Tracker: Assume oggetto completamente visibile. Buon algoritmo.
+    - KCF Tracker: Migliora MIl lavorando a livello di kernel, l'oggetto lo devi vedere però
+    - TLD Tracker: Trova oggetto solo vedendo una parte. UN casino di falsi positivi
+    Più lenti perchè con CNN
+    - MEDIANFLOW: Bello ma funziona male per movimenti ampi
+    - GOTURN: based on convolutional neural networks it is robust to many disturbances
+    - CSRT:
+    - MOSSE: fast but not accurate as kcf and csrt
