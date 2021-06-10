@@ -141,7 +141,6 @@ def find_pendulum(frame, min_h, max_h):
     cv2.waitKey(1)
 
 
-
 if __name__ == "__main__":
     cap = cv2.VideoCapture(1)
     if interactive:
